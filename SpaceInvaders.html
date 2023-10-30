@@ -29,6 +29,7 @@
         const bulletSpeed = 7;
         let bulletX = playerX + playerWidth / 2 - bulletWidth / 2;
         let bulletY = canvas.height - playerHeight;
+        let isBulletFired = false;
 
         // Enemigos
         const enemyWidth = 20;
@@ -54,8 +55,10 @@
         }
 
         function drawBullet() {
-            ctx.fillStyle = "red";
-            ctx.fillRect(bulletX, bulletY, bulletWidth, bulletHeight);
+            if (isBulletFired) {
+                ctx.fillStyle = "red";
+                ctx.fillRect(bulletX, bulletY, bulletWidth, bulletHeight);
+            }
         }
 
         function drawEnemies() {
@@ -75,7 +78,12 @@
         }
 
         function moveBullet() {
-            bulletY -= bulletSpeed;
+            if (isBulletFired) {
+                bulletY -= bulletSpeed;
+                if (bulletY < 0) {
+                    isBulletFired = false;
+                }
+            }
         }
 
         function moveEnemies() {
@@ -91,6 +99,7 @@
             for (let i = 0; i < enemies.length; i++) {
                 let enemy = enemies[i];
                 if (
+                    isBulletFired &&
                     bulletX + bulletWidth > enemy.x &&
                     bulletX < enemy.x + enemyWidth &&
                     bulletY + bulletHeight > enemy.y &&
@@ -98,7 +107,7 @@
                 ) {
                     // Colisión entre bala y enemigo
                     enemies.splice(i, 1);
-                    bulletY = canvas.height - playerHeight;
+                    isBulletFired = false;
                 }
             }
         }
@@ -111,7 +120,7 @@
             drawEnemies();
 
             movePlayer();
-            if (spacePressed) moveBullet();
+            moveBullet();
             moveEnemies();
             checkCollisions();
 
@@ -125,9 +134,10 @@
             if (event.key === "Left" || event.key === "ArrowLeft") {
                 leftPressed = true;
             }
-            if (event.key === " " || event.key === "Spacebar") {
+            if ((event.key === " " || event.key === "Spacebar") && !isBulletFired) {
                 spacePressed = true;
                 bulletX = playerX + playerWidth / 2 - bulletWidth / 2;
+                isBulletFired = true;
             }
         });
 
