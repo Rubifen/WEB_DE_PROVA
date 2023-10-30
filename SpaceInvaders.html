@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Nave del jugador
+        const playerWidth = 40;
+        const playerHeight = 20;
+        const playerSpeed = 5;
+        let playerX = (canvas.width - playerWidth) / 2;
+
+        // Disparo del jugador
+        const bulletWidth = 4;
+        const bulletHeight = 10;
+        const bulletSpeed = 7;
+        let bulletX = playerX + playerWidth / 2 - bulletWidth / 2;
+        let bulletY = canvas.height - playerHeight;
+
+        // Enemigos
+        const enemyWidth = 20;
+        const enemyHeight = 20;
+        const enemySpeed = 2;
+        let enemies = [];
+
+        // Teclas
+        let rightPressed = false;
+        let leftPressed = false;
+        let spacePressed = false;
+
+        // Crear enemigos
+        for (let i = 0; i < 5; i++) {
+            for (let j = 0; j < 3; j++) {
+                enemies.push({ x: i * 60 + 30, y: j * 40 + 30 });
+            }
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(playerX, canvas.height - playerHeight, playerWidth, playerHeight);
+        }
+
+        function drawBullet() {
+            ctx.fillStyle = "red";
+            ctx.fillRect(bulletX, bulletY, bulletWidth, bulletHeight);
+        }
+
+        function drawEnemies() {
+            ctx.fillStyle = "green";
+            enemies.forEach(function (enemy) {
+                ctx.fillRect(enemy.x, enemy.y, enemyWidth, enemyHeight);
+            });
+        }
+
+        function movePlayer() {
+            if (rightPressed && playerX < canvas.width - playerWidth) {
+                playerX += playerSpeed;
+            }
+            if (leftPressed && playerX > 0) {
+                playerX -= playerSpeed;
+            }
+        }
+
+        function moveBullet() {
+            bulletY -= bulletSpeed;
+        }
+
+        function moveEnemies() {
+            enemies.forEach(function (enemy) {
+                enemy.y += enemySpeed;
+                if (enemy.y > canvas.height) {
+                    enemy.y = -enemyHeight;
+                }
+            });
+        }
+
+        function checkCollisions() {
+            for (let i = 0; i < enemies.length; i++) {
+                let enemy = enemies[i];
+                if (
+                    bulletX + bulletWidth > enemy.x &&
+                    bulletX < enemy.x + enemyWidth &&
+                    bulletY + bulletHeight > enemy.y &&
+                    bulletY < enemy.y + enemyHeight
+                ) {
+                    // Colisión entre bala y enemigo
+                    enemies.splice(i, 1);
+                    bulletY = canvas.height - playerHeight;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawPlayer();
+            drawBullet();
+            drawEnemies();
+
+            movePlayer();
+            moveBullet();
+            moveEnemies();
+            checkCollisions();
+
+            requestAnimationFrame(draw);
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Right" || event.key === "ArrowRight") {
+                rightPressed = true;
+            }
+            if (event.key === "Left" || event.key === "ArrowLeft") {
+                leftPressed = true;
+            }
+            if (event.key === " " || event.key === "Spacebar") {
+                spacePressed = true;
+                bulletX = playerX + playerWidth / 2 - bulletWidth / 2;
+            }
+        });
+
+        document.addEventListener("keyup", function (event) {
+            if (event.key === "Right" || event.key === "ArrowRight") {
+                rightPressed = false;
+            }
+            if (event.key === "Left" || event.key === "ArrowLeft") {
+                leftPressed = false;
+            }
+            if (event.key === " " || event.key === "Spacebar") {
+                spacePressed = false;
+            }
+        });
+
+        draw();
+    </script>
+</body>
+</html>
