@@ -56,6 +56,274 @@
             font-size: 36px;
             display: none;
         }
+
+        .restart-button {
+            position: absolute;
+            top: 350px;
+            left: 350px;
+            padding: 10px 20px;
+            background-color: #00f;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .high-score {
+            position: absolute;
+            top: 400px;
+            left: 300px;
+            color: white;
+            font-size: 24px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="player"></div>
+    </div>
+    <p class="score">Score: 0</p>
+    <p class="game-over" id="game-over">Game Over</p>
+    <button class="restart-button" id="restart-button" onclick="restartGame()">Restart</button>
+    <p class="high-score" id="high-score">High Score: 0</p>
+    <script>
+        const gameContainer = document.querySelector('.game-container');
+        const player = document.querySelector('.player');
+        const scoreElement = document.querySelector('.score');
+        const gameOverElement = document.querySelector('#game-over');
+        const restartButton = document.querySelector('#restart-button');
+        const highScoreElement = document.querySelector('#high-score');
+
+        const playerSpeed = 5;
+        const bulletSpeed = 5;
+        const invaderSpeed = 1;
+        const playerMovement = { left: false, right: false };
+        const bullets = [];
+        const invaders = [];
+        let score = 0;
+        let invaderInterval;
+        let bulletInterval;
+        let invaderSpeedIncrement = 0;
+        let highScore = 0;
+
+        function movePlayer() {
+            if (playerMovement.left && player.offsetLeft > 0) {
+                player.style.left = (player.offsetLeft - playerSpeed) + 'px';
+            } else if (playerMovement.right && player.offsetLeft < (gameContainer.offsetWidth - player.offsetWidth)) {
+                player.style.left = (player.offsetLeft + playerSpeed) + 'px';
+            }
+            requestAnimationFrame(movePlayer);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                playerMovement.left = true;
+            } else if (e.key === 'ArrowRight') {
+                playerMovement.right = true;
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                createBullet();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') {
+                playerMovement.left = false;
+            } else if (e.key === 'ArrowRight') {
+                playerMovement.right = false;
+            }
+        });
+
+        function createBullet() {
+            const bullet = document.createElement('div');
+            bullet.classList.add('bullet');
+            bullet.style.left = (player.offsetLeft + player.offsetWidth / 2 - 1) + 'px';
+            bullet.style.bottom = '30px';
+            gameContainer.appendChild(bullet);
+            bullets.push(bullet);
+
+            if (!bulletInterval) {
+                bulletInterval = setInterval(moveBullets, 16);
+            }
+        }
+
+        function moveBullets() {
+            for (let i = 0; i < bullets.length; i++) {
+                const bullet = bullets[i];
+                const currentBottom = parseInt(bullet.style.bottom);
+                bullet.style.bottom = (currentBottom + bulletSpeed) + 'px';
+
+                if (currentBottom >= gameContainer.clientHeight) {
+                    gameContainer.removeChild(bullet);
+                    bullets.splice(i, 1);
+                    i--;
+                } else {
+                    checkBulletCollision(bullet);
+                }
+            }
+        }
+
+        function checkBulletCollision(bullet) {
+            const bulletRect = bullet.getBoundingClientRect();
+
+            for (let i = 0; i < invaders.length; i++) {
+                const invader = invaders[i];
+                const invaderRect = invader.getBoundingClientRect();
+
+                if (bulletRect.top <= invaderRect.bottom &&
+                    bulletRect.right >= invaderRect.left &&
+                    bulletRect.left <= invaderRect.right) {
+                    gameContainer.removeChild(bullet);
+                    gameContainer.removeChild(invader);
+                    bullets.splice(bullets.indexOf(bullet), 1);
+                    invaders.splice(i, 1);
+                    updateScore(10);
+                }
+            }
+        }
+
+        function updateScore(points) {
+            score += points;
+            scoreElement.innerText = 'Score: ' + score;
+
+            if (score > highScore) {
+                highScore = score;
+                highScoreElement.style.display = 'block';
+                highScoreElement.innerText = 'High Score: ' + highScore;
+            }
+        }
+
+        function createInvaders() {
+            for (let i = 0; i < 8; i++) {
+                const invader = document.createElement('div');
+                invader.classList.add('invader');
+                invader.style.left = (i * 100) + 'px';
+                invader.style.top = '0';
+                gameContainer.appendChild(invader);
+                invaders.push(invader);
+            }
+        }
+
+        function moveInvaders() {
+            for (let i = 0; i < invaders.length; i++) {
+                const invader = invaders[i];
+                const currentTop = parseInt(invader.style.top);
+                invader.style.top = (currentTop + (invaderSpeed + invaderSpeedIncrement)) + 'px';
+
+                if (currentTop >= gameContainer.clientHeight) {
+                    gameOver();
+                } else {
+                    checkPlayerCollision(invader);
+                }
+            }
+            requestAnimationFrame(moveInvaders);
+        }
+
+        function checkPlayerCollision(invader) {
+            const playerRect = player.getBoundingClientRect();
+            const invaderRect = invader.getBoundingClientRect();
+
+            if (playerRect.top <= invaderRect.bottom &&
+                playerRect.right >= invaderRect.left &&
+                playerRect.left <= invaderRect.right) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            gameOverElement.style.display = 'block';
+            restartButton.style.display = 'block';
+
+            if (score > highScore) {
+                highScore = score;
+                highScoreElement.style.display = 'block';
+                highScoreElement.innerText = 'High Score: ' + highScore;
+            }
+
+            clearInterval(invaderInterval);
+            clearInterval(bulletInterval);
+            document.removeEventListener('keydown', movePlayer);
+        }
+
+        function restartGame() {
+            gameOverElement.style.display = 'none';
+            restartButton.style.display = 'none';
+            highScoreElement.style.display = 'none';
+            score = 0;
+            scoreElement.innerText = 'Score: 0';
+            player.style.left = '375px';
+            invaders.forEach((invader) => gameContainer.removeChild(invader));
+            invaders.length = 0;
+            bullets.forEach((bullet) => gameContainer.removeChild(bullet));
+            bullets.length = 0;
+            createInvaders();
+            invaderInterval = setInterval(moveInvaders, 16);
+        }
+
+        document.addEventListener('keydown', movePlayer);
+        createInvaders();
+        invaderInterval = setInterval(moveInvaders, 16);
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Space Invaders</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: 100px auto;
+            background-color: #000;
+        }
+
+        .player {
+            position: absolute;
+            width: 50px;
+            height: 30px;
+            background-color: #00f;
+            bottom: 0;
+            left: 375px;
+        }
+
+        .bullet {
+            position: absolute;
+            width: 3px;
+            height: 10px;
+            background-color: #00f;
+        }
+
+        .invader {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #f00;
+        }
+
+        .score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 24px;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 250px;
+            left: 350px;
+            color: white;
+            font-size: 36px;
+            display: none;
+        }
     </style>
 </head>
 <body>
