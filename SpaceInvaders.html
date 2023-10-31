@@ -1,159 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>Space Invaders</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
+            background-color: #000;
         }
-        canvas {
-            display: block;
+
+        .game-container {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            margin: 100px auto;
+            background-color: #000;
+        }
+
+        .player {
+            position: absolute;
+            width: 50px;
+            height: 30px;
+            background-color: #00f;
+            bottom: 0;
+            left: 275px;
+        }
+
+        .bullet {
+            position: absolute;
+            width: 3px;
+            height: 10px;
+            background-color: #00f;
+        }
+
+        .invader {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #f00;
+        }
+
+        .score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 24px;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="game-container">
+        <div class="player"></div>
+        <div class="invader"></div>
+    </div>
+    <p class="score">Score: 0</p>
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        const gameContainer = document.querySelector('.game-container');
+        const player = document.querySelector('.player');
+        const invader = document.querySelector('.invader');
+        const scoreElement = document.querySelector('.score');
 
-        // Nave del jugador
-        const playerWidth = 40;
-        const playerHeight = 20;
         const playerSpeed = 5;
-        let playerX = (canvas.width - playerWidth) / 2;
+        const bulletSpeed = 5;
+        const invaderSpeed = 3;
+        let score = 0;
 
-        // Disparo del jugador
-        const bulletWidth = 4;
-        const bulletHeight = 10;
-        const bulletSpeed = 7;
-        let bulletX = playerX + playerWidth / 2 - bulletWidth / 2;
-        let bulletY = canvas.height - playerHeight;
-        let isBulletFired = false;
-
-        // Enemigos
-        const enemyWidth = 20;
-        const enemyHeight = 20;
-        const enemySpeed = 2;
-        let enemies = [];
-
-        // Teclas
-        let rightPressed = false;
-        let leftPressed = false;
-        let spacePressed = false;
-
-        // Crear enemigos
-        for (let i = 0; i < 5; i++) {
-            for (let j = 0; j < 3; j++) {
-                enemies.push({ x: i * 60 + 30, y: j * 40 + 30 });
+        function movePlayer(e) {
+            if (e.key === 'ArrowLeft') {
+                const currentLeft = parseInt(getComputedStyle(player).left);
+                player.style.left = Math.max(currentLeft - playerSpeed, 0) + 'px';
+            } else if (e.key === 'ArrowRight') {
+                const currentLeft = parseInt(getComputedStyle(player).left);
+                player.style.left = Math.min(currentLeft + playerSpeed, gameContainer.clientWidth - player.clientWidth) + 'px';
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                createBullet();
             }
         }
 
-        function drawPlayer() {
-            ctx.fillStyle = "blue";
-            ctx.fillRect(playerX, canvas.height - playerHeight, playerWidth, playerHeight);
-        }
+        function createBullet() {
+            const bullet = document.createElement('div');
+            bullet.classList.add('bullet');
+            bullet.style.left = (parseInt(getComputedStyle(player).left) + player.clientWidth / 2 - 1) + 'px';
+            bullet.style.bottom = '30px';
+            gameContainer.appendChild(bullet);
 
-        function drawBullet() {
-            if (isBulletFired) {
-                ctx.fillStyle = "red";
-                ctx.fillRect(bulletX, bulletY, bulletWidth, bulletHeight);
-            }
-        }
+            function moveBullet() {
+                const currentBottom = parseInt(getComputedStyle(bullet).bottom);
+                bullet.style.bottom = currentBottom + bulletSpeed + 'px';
 
-        function drawEnemies() {
-            ctx.fillStyle = "green";
-            enemies.forEach(function (enemy) {
-                ctx.fillRect(enemy.x, enemy.y, enemyWidth, enemyHeight);
-            });
-        }
-
-        function movePlayer() {
-            if (rightPressed && playerX < canvas.width - playerWidth) {
-                playerX += playerSpeed;
-            }
-            if (leftPressed && playerX > 0) {
-                playerX -= playerSpeed;
-            }
-        }
-
-        function moveBullet() {
-            if (isBulletFired) {
-                bulletY -= bulletSpeed;
-                if (bulletY < 0) {
-                    isBulletFired = false;
+                if (currentBottom >= gameContainer.clientHeight) {
+                    gameContainer.removeChild(bullet);
+                } else {
+                    checkBulletCollision(bullet);
                 }
             }
+
+            setInterval(moveBullet, 16);
         }
 
-        function moveEnemies() {
-            enemies.forEach(function (enemy) {
-                enemy.y += enemySpeed;
-                if (enemy.y > canvas.height) {
-                    enemy.y = -enemyHeight;
-                }
-            });
-        }
+        function checkBulletCollision(bullet) {
+            const bulletRect = bullet.getBoundingClientRect();
+            const invaderRect = invader.getBoundingClientRect();
 
-        function checkCollisions() {
-            for (let i = 0; i < enemies.length; i++) {
-                let enemy = enemies[i];
-                if (
-                    isBulletFired &&
-                    bulletX + bulletWidth > enemy.x &&
-                    bulletX < enemy.x + enemyWidth &&
-                    bulletY + bulletHeight > enemy.y &&
-                    bulletY < enemy.y + enemyHeight
-                ) {
-                    // Colisión entre bala y enemigo
-                    enemies.splice(i, 1);
-                    isBulletFired = false;
-                }
+            if (bulletRect.top <= invaderRect.bottom &&
+                bulletRect.right >= invaderRect.left &&
+                bulletRect.left <= invaderRect.right) {
+                gameContainer.removeChild(bullet);
+                resetInvader();
+                updateScore(10);
             }
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            drawPlayer();
-            drawBullet();
-            drawEnemies();
-
-            movePlayer();
-            moveBullet();
-            moveEnemies();
-            checkCollisions();
-
-            requestAnimationFrame(draw);
+        function resetInvader() {
+            invader.style.left = Math.floor(Math.random() * (gameContainer.clientWidth - invader.clientWidth)) + 'px';
+            invader.style.top = '0';
         }
 
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Right" || event.key === "ArrowRight") {
-                rightPressed = true;
-            }
-            if (event.key === "Left" || event.key === "ArrowLeft") {
-                leftPressed = true;
-            }
-            if ((event.key === " " || event.key === "Spacebar") && !isBulletFired) {
-                spacePressed = true;
-                bulletX = playerX + playerWidth / 2 - bulletWidth / 2;
-                isBulletFired = true;
-            }
-        });
+        function updateScore(points) {
+            score += points;
+            scoreElement.innerText = 'Score: ' + score;
+        }
 
-        document.addEventListener("keyup", function (event) {
-            if (event.key === "Right" || event.key === "ArrowRight") {
-                rightPressed = false;
-            }
-            if (event.key === "Left" || event.key === "ArrowLeft") {
-                leftPressed = false;
-            }
-            if (event.key === " " || event.key === "Spacebar") {
-                spacePressed = false;
-            }
-        });
+        document.addEventListener('keydown', movePlayer);
 
-        draw();
+        resetInvader();
     </script>
 </body>
 </html>
