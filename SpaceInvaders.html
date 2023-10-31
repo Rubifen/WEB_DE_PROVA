@@ -11,8 +11,8 @@
 
         .game-container {
             position: relative;
-            width: 600px;
-            height: 400px;
+            width: 800px;
+            height: 600px;
             margin: 100px auto;
             background-color: #000;
         }
@@ -23,7 +23,7 @@
             height: 30px;
             background-color: #00f;
             bottom: 0;
-            left: 275px;
+            left: 375px;
         }
 
         .bullet {
@@ -47,32 +47,39 @@
             color: white;
             font-size: 24px;
         }
+
+        .game-over {
+            position: absolute;
+            top: 250px;
+            left: 350px;
+            color: white;
+            font-size: 36px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="player"></div>
-        <div class="invader"></div>
     </div>
     <p class="score">Score: 0</p>
+    <p class="game-over" id="game-over">Game Over</p>
     <script>
         const gameContainer = document.querySelector('.game-container');
         const player = document.querySelector('.player');
-        const invader = document.querySelector('.invader');
         const scoreElement = document.querySelector('.score');
-
+        const gameOverElement = document.querySelector('#game-over');
         const playerSpeed = 5;
         const bulletSpeed = 5;
-        const invaderSpeed = 3;
+        const invaderSpeed = 2;
         let score = 0;
+        let invaders = [];
 
         function movePlayer(e) {
-            if (e.key === 'ArrowLeft') {
-                const currentLeft = parseInt(getComputedStyle(player).left);
-                player.style.left = Math.max(currentLeft - playerSpeed, 0) + 'px';
-            } else if (e.key === 'ArrowRight') {
-                const currentLeft = parseInt(getComputedStyle(player).left);
-                player.style.left = Math.min(currentLeft + playerSpeed, gameContainer.clientWidth - player.clientWidth) + 'px';
+            if (e.key === 'ArrowLeft' && player.style.left !== '0px') {
+                player.style.left = (parseInt(getComputedStyle(player).left) - playerSpeed) + 'px';
+            } else if (e.key === 'ArrowRight' && player.style.left !== '750px') {
+                player.style.left = (parseInt(getComputedStyle(player).left) + playerSpeed) + 'px';
             } else if (e.key === ' ' || e.key === 'Spacebar') {
                 createBullet();
             }
@@ -87,7 +94,7 @@
 
             function moveBullet() {
                 const currentBottom = parseInt(getComputedStyle(bullet).bottom);
-                bullet.style.bottom = currentBottom + bulletSpeed + 'px';
+                bullet.style.bottom = (currentBottom + bulletSpeed) + 'px';
 
                 if (currentBottom >= gameContainer.clientHeight) {
                     gameContainer.removeChild(bullet);
@@ -101,20 +108,25 @@
 
         function checkBulletCollision(bullet) {
             const bulletRect = bullet.getBoundingClientRect();
-            const invaderRect = invader.getBoundingClientRect();
 
-            if (bulletRect.top <= invaderRect.bottom &&
-                bulletRect.right >= invaderRect.left &&
-                bulletRect.left <= invaderRect.right) {
-                gameContainer.removeChild(bullet);
-                resetInvader();
-                updateScore(10);
+            for (let i = 0; i < invaders.length; i++) {
+                const invader = invaders[i];
+                const invaderRect = invader.getBoundingClientRect();
+
+                if (bulletRect.top <= invaderRect.bottom &&
+                    bulletRect.right >= invaderRect.left &&
+                    bulletRect.left <= invaderRect.right) {
+                    gameContainer.removeChild(bullet);
+                    gameContainer.removeChild(invader);
+                    invaders.splice(i, 1);
+                    updateScore(10);
+
+                    if (invaders.length === 0) {
+                        createInvaders();
+                    }
+                    return;
+                }
             }
-        }
-
-        function resetInvader() {
-            invader.style.left = Math.floor(Math.random() * (gameContainer.clientWidth - invader.clientWidth)) + 'px';
-            invader.style.top = '0';
         }
 
         function updateScore(points) {
@@ -122,9 +134,50 @@
             scoreElement.innerText = 'Score: ' + score;
         }
 
-        document.addEventListener('keydown', movePlayer);
+        function createInvaders() {
+            for (let i = 0; i < 8; i++) {
+                const invader = document.createElement('div');
+                invader.classList.add('invader');
+                invader.style.left = (i * 100) + 'px';
+                invader.style.top = '0';
+                gameContainer.appendChild(invader);
+                invaders.push(invader);
+            }
+        }
 
-        resetInvader();
+        function moveInvaders() {
+            invaders.forEach((invader) => {
+                const currentTop = parseInt(getComputedStyle(invader).top);
+                invader.style.top = (currentTop + invaderSpeed) + 'px';
+
+                if (currentTop >= gameContainer.clientHeight) {
+                    gameOver();
+                } else {
+                    checkPlayerCollision(invader);
+                }
+            });
+        }
+
+        function checkPlayerCollision(invader) {
+            const playerRect = player.getBoundingClientRect();
+            const invaderRect = invader.getBoundingClientRect();
+
+            if (playerRect.top <= invaderRect.bottom &&
+                playerRect.right >= invaderRect.left &&
+                playerRect.left <= invaderRect.right) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            gameOverElement.style.display = 'block';
+            clearInterval(invaderInterval);
+            document.removeEventListener('keydown', movePlayer);
+        }
+
+        document.addEventListener('keydown', movePlayer);
+        createInvaders();
+        const invaderInterval = setInterval(moveInvaders, 16);
     </script>
 </body>
 </html>
