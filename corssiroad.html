@@ -6,38 +6,164 @@
         #game-container {
             width: 400px;
             height: 600px;
-            background-color: lightgray;
+            background-color: #87CEEB;
             position: relative;
+            overflow: hidden;
         }
 
-        #player {
+        .player {
             width: 50px;
             height: 50px;
-            background-color: green;
+            background-image: url('player_sprite.png');
+            background-size: cover;
             position: absolute;
             bottom: 0;
             left: 175px;
         }
+
+        .obstacle {
+            width: 50px;
+            height: 50px;
+            background-image: url('obstacle.png');
+            background-size: cover;
+            position: absolute;
+            animation: moveObstacle 5s linear infinite;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        @keyframes moveObstacle {
+            from {
+                left: 400px;
+            }
+            to {
+                left: -50px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <div id="player"></div>
+    <div id="start-screen">
+        <p>Welcome to Crossy Road Game</p>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+    <div id="game-container" style="display: none;">
+        <div class="player" id="player"></div>
+        <div id="score">Score: 0</div>
     </div>
 
-    <script>
-        const player = document.getElementById("player");
-        let playerPosition = 0;
+    <audio id="collisionSound" src="collision.mp3"></audio>
 
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowLeft" && playerPosition > 0) {
-                playerPosition -= 50;
-                player.style.left = playerPosition + "px";
-            } else if (event.key === "ArrowRight" && playerPosition < 350) {
-                playerPosition += 50;
-                player.style.left = playerPosition + "px";
+    <script>
+        let gameInterval;
+        let isGameRunning = false;
+        const gameContainer = document.getElementById("game-container");
+        const startScreen = document.getElementById("start-screen");
+        const player = document.getElementById("player");
+        let playerPosition = 175;
+        let score = 0;
+
+        function updateScore() {
+            document.getElementById("score").innerText = "Score: " + score;
+        }
+
+        function startGame() {
+            isGameRunning = true;
+            startScreen.style.display = "none";
+            gameContainer.style.display = "block";
+            updateScore();
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "ArrowLeft" && playerPosition > 0) {
+                    playerPosition -= 50;
+                    player.style.left = playerPosition + "px";
+                } else if (event.key === "ArrowRight" && playerPosition < 350) {
+                    playerPosition += 50;
+                    player.style.left = playerPosition + "px";
+                }
+            });
+
+            function createObstacle() {
+                const obstacle = document.createElement("div");
+                obstacle.className = "obstacle";
+                obstacle.style.left = "400px";
+                obstacle.style.top = Math.floor(Math.random() * 5) * 50 + "px";
+                gameContainer.appendChild(obstacle);
+                return obstacle;
             }
-        });
+
+            function moveObstacles() {
+                if (!isGameRunning) {
+                    return;
+                }
+
+                const obstacles = document.querySelectorAll(".obstacle");
+                for (const obstacle of obstacles) {
+                    const currentLeft = parseInt(obstacle.style.left, 10);
+                    obstacle.style.left = (currentLeft - 5) + "px";
+
+                    if (currentLeft < -50) {
+                        obstacle.remove();
+                    }
+
+                    if (
+                        playerPosition < currentLeft + 50 &&
+                        playerPosition + 50 > currentLeft &&
+                        player.style.bottom === obstacle.style.top
+                    ) {
+                        isGameRunning = false;
+                        document.getElementById("collisionSound").play();
+                        alert("Game Over! Your Score: " + score);
+                    }
+                }
+
+                if (Math.random() < 0.02) {
+                    const obstacle = createObstacle();
+                    setInterval(() => {
+                        if (!obstacle.parentElement) {
+                            return;
+                        }
+                        obstacle.remove();
+                        score += 10;
+                        updateScore();
+                    }, 1000);
+                }
+            }
+
+            gameInterval = setInterval(moveObstacles, 20);
+        }
+
+        function restartGame() {
+            const obstacles = document.querySelectorAll(".obstacle");
+            for (const obstacle of obstacles) {
+                obstacle.remove();
+            }
+            playerPosition = 175;
+            player.style.left = playerPosition + "px";
+            score = 0;
+            updateScore();
+            startGame();
+        }
     </script>
 </body>
 </html>
