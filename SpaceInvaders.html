@@ -71,33 +71,54 @@
         const gameOverElement = document.querySelector('#game-over');
         const playerSpeed = 5;
         const bulletSpeed = 5;
-        const invaderSpeed = 2;
+        const invaderSpeed = 1;
+        const playerMovement = { left: false, right: false };
         let score = 0;
         let invaders = [];
+        let bullets = [];
 
-        function movePlayer(e) {
-            if (e.key === 'ArrowLeft' && player.style.left !== '0px') {
-                player.style.left = (parseInt(getComputedStyle(player).left) - playerSpeed) + 'px';
-            } else if (e.key === 'ArrowRight' && player.style.left !== '750px') {
-                player.style.left = (parseInt(getComputedStyle(player).left) + playerSpeed) + 'px';
+        function movePlayer() {
+            if (playerMovement.left && player.offsetLeft > 0) {
+                player.style.left = (player.offsetLeft - playerSpeed) + 'px';
+            } else if (playerMovement.right && player.offsetLeft < (gameContainer.offsetWidth - player.offsetWidth)) {
+                player.style.left = (player.offsetLeft + playerSpeed) + 'px';
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                playerMovement.left = true;
+            } else if (e.key === 'ArrowRight') {
+                playerMovement.right = true;
             } else if (e.key === ' ' || e.key === 'Spacebar') {
                 createBullet();
             }
-        }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') {
+                playerMovement.left = false;
+            } else if (e.key === 'ArrowRight') {
+                playerMovement.right = false;
+            }
+        });
 
         function createBullet() {
             const bullet = document.createElement('div');
             bullet.classList.add('bullet');
-            bullet.style.left = (parseInt(getComputedStyle(player).left) + player.clientWidth / 2 - 1) + 'px';
+            bullet.style.left = (player.offsetLeft + player.offsetWidth / 2 - 1) + 'px';
             bullet.style.bottom = '30px';
             gameContainer.appendChild(bullet);
 
+            bullets.push(bullet);
+
             function moveBullet() {
-                const currentBottom = parseInt(getComputedStyle(bullet).bottom);
+                const currentBottom = parseInt(bullet.style.bottom);
                 bullet.style.bottom = (currentBottom + bulletSpeed) + 'px';
 
                 if (currentBottom >= gameContainer.clientHeight) {
                     gameContainer.removeChild(bullet);
+                    bullets.shift();
                 } else {
                     checkBulletCollision(bullet);
                 }
@@ -118,6 +139,7 @@
                     bulletRect.left <= invaderRect.right) {
                     gameContainer.removeChild(bullet);
                     gameContainer.removeChild(invader);
+                    bullets.shift();
                     invaders.splice(i, 1);
                     updateScore(10);
 
@@ -147,7 +169,7 @@
 
         function moveInvaders() {
             invaders.forEach((invader) => {
-                const currentTop = parseInt(getComputedStyle(invader).top);
+                const currentTop = parseInt(invader.style.top);
                 invader.style.top = (currentTop + invaderSpeed) + 'px';
 
                 if (currentTop >= gameContainer.clientHeight) {
@@ -175,9 +197,39 @@
             document.removeEventListener('keydown', movePlayer);
         }
 
+        function invaderShooting() {
+            if (invaders.length > 0) {
+                const randomInvader = invaders[Math.floor(Math.random() * invaders.length)];
+                createBulletFromInvader(randomInvader);
+            }
+        }
+
+        function createBulletFromInvader(invader) {
+            const bullet = document.createElement('div');
+            bullet.classList.add('bullet');
+            bullet.style.left = (invader.offsetLeft + invader.offsetWidth / 2 - 1) + 'px';
+            bullet.style.top = (invader.offsetTop + invader.offsetHeight) + 'px';
+            gameContainer.appendChild(bullet);
+
+            function moveBullet() {
+                const currentTop = parseInt(bullet.style.top);
+                bullet.style.top = (currentTop + bulletSpeed) + 'px';
+
+                if (currentTop >= gameContainer.clientHeight) {
+                    gameContainer.removeChild(bullet);
+                } else {
+                    checkPlayerCollision(bullet);
+                }
+            }
+
+            setInterval(moveBullet, 16);
+        }
+
         document.addEventListener('keydown', movePlayer);
         createInvaders();
         const invaderInterval = setInterval(moveInvaders, 16);
+        setInterval(movePlayer, 16);
+        setInterval(invaderShooting, 2000); // Invasores disparan cada 2 segundos
     </script>
 </body>
 </html>
