@@ -113,26 +113,7 @@
             } else if (playerMovement.right && player.offsetLeft < (gameContainer.offsetWidth - player.offsetWidth)) {
                 player.style.left = (player.offsetLeft + playerSpeed) + 'px';
             }
-            requestAnimationFrame(movePlayer);
         }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                playerMovement.left = true;
-            } else if (e.key === 'ArrowRight') {
-                playerMovement.right = true;
-            } else if (e.key === ' ' || e.key === 'Spacebar') {
-                createBullet();
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft') {
-                playerMovement.left = false;
-            } else if (e.key === 'ArrowRight') {
-                playerMovement.right = false;
-            }
-        });
 
         function createBullet() {
             const bullet = document.createElement('div');
@@ -216,7 +197,6 @@
                     checkPlayerCollision(invader);
                 }
             }
-            requestAnimationFrame(moveInvaders);
         }
 
         function checkPlayerCollision(invader) {
@@ -232,7 +212,7 @@
 
         function gameOver() {
             gameOverElement.style.display = 'block';
-            restartButton.style display = 'block';
+            restartButton.style.display = 'block';
 
             if (score > highScore) {
                 highScore = score;
@@ -260,9 +240,27 @@
             invaderInterval = setInterval(moveInvaders, 16);
         }
 
-        document.addEventListener('keydown', movePlayer);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                playerMovement.left = true;
+            } else if (e.key === 'ArrowRight') {
+                playerMovement.right = true;
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                createBullet();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') {
+                playerMovement.left = false;
+            } else if (e.key === 'ArrowRight') {
+                playerMovement.right = false;
+            }
+        });
+
         createInvaders();
         invaderInterval = setInterval(moveInvaders, 16);
+        movePlayer();
     </script>
 </body>
 </html>
